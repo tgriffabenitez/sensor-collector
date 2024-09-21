@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: kafka-producer-consumer
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      client-id: sensor-producer
+
+server:
+  port: 8080
