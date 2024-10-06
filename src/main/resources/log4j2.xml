@@ -1,32 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="WARN">
     <Appenders>
-        <!-- Appender para la consola -->
         <Console name="Console" target="SYSTEM_OUT">
             <PatternLayout>
                 <Pattern>
-                    %highlight{[  %level  ]} %highlight{[%d{yyyy-MM-dd HH:mm:ss}]} %highlight{[%c{1}]} : %msg%n
+                    %highlight{[%-5.5p]} %highlight{[%d{yyyy-MM-dd HH:mm:ss}]} %highlight{[%c{1}:%L]} %highlight{>} %msg%n
                 </Pattern>
             </PatternLayout>
         </Console>
 
-        <!-- Appender para el archivo -->
-        <File name="File" fileName="logs/app.log" append="true">
-            <PatternLayout pattern="[  %level]   [%d{yyyy-MM-dd HH:mm:ss}] [%c{1}] : %msg%n"/>
-        </File>
+        <RollingFile name="RollingFileAppender" fileName="logs/app.log" filePattern="logs/app-%d{yyyy-MM-dd}.log">
+            <PatternLayout pattern="[%-5.5p] [%d{yyyy-MM-dd HH:mm:ss}] [%c{1}:%L] > %msg%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+            <DefaultRolloverStrategy max="7"/>
+        </RollingFile>
     </Appenders>
 
     <Loggers>
-        <!-- Logger para el paquete de tu aplicación -->
         <Logger name="com.tmg.sensorcollector" level="info" additivity="false">
             <AppenderRef ref="Console"/>
-            <AppenderRef ref="File"/>
+            <AppenderRef ref="RollingFileAppender"/>
         </Logger>
 
-        <!-- Logger raíz -->
         <Root level="warn">
             <AppenderRef ref="Console"/>
-            <AppenderRef ref="File"/>
+            <AppenderRef ref="RollingFileAppender"/>
         </Root>
     </Loggers>
 </Configuration>
