@@ -16,14 +16,15 @@ sensor-monitor.
 
 ## Architecture
 
-The sensor-collector microservice acts as a receiver for sensor data. When a client sends an HTTP POST request with the
-sensor data, the service validates the data and sends it to a Kafka topic for processing by other microservices.
+The sensor-collector microservice acts as a receiver for sensor data. When a client sends an HTTP POST request with the 
+sensor data, the service validates the data and sends it to a Kafka topic for processing by other microservices. 
+Additionally, it can receive data via the MQTT protocol, enabling more efficient communication with IoT devices.
 
 The basic flow is:
 
-1. Client sends sensor data via POST to the API.
+1. Client sends sensor data via POST to the API or through MQTT.
 2. Sensor Collector receives and validates the data.
-3. Kafka is used to send the data to the corresponding topic.
+3. For HTTP POST requests and MQTT, Kafka is used to send the data to the corresponding topic.
 4. Other microservices, like sensor-monitor, consume that data from Kafka for analysis or further processing.
 
 ### Prerequisites
@@ -33,21 +34,28 @@ Before running the project, make sure you have the following installed:
 - Java 11 (or higher)
 - Apache Kafka installed and configured locally or on an accessible server
 - Zookeeper (if running Kafka locally)
+- Mosquitto (for MQTT communication)
 - Maven
 
 ## Installation and configuration
 
 1. Clone the repository.
-2. Configure Kafka: Open the src/main/resources/application.yml file and configure the Kafka connection details:
+   2. Configure Kafka and Mqtt: Open the src/main/resources/application.yml file and configure the Kafka connection details:
 
-    ```yaml
-    spring:
-      kafka:
-        bootstrap-servers: localhost:9092
-        producer:
-          key-serializer: org.apache.kafka.common.serialization.StringSerializer
-          value-serializer: org.apache.kafka.common.serialization.StringSerializer
-    ```
+       ```yaml
+        spring:
+          kafka:
+            bootstrap-servers: localhost:9092
+            producer:
+              key-serializer: org.apache.kafka.common.serialization.StringSerializer
+              value-serializer: org.apache.kafka.common.serialization.StringSerializer
+          mqtt:
+            host: 127.0.0.1
+            port: 1883
+            username: admin
+            password: admin
+            generalTopic: sensor/#
+       ```
 
 3. Build the project: Run the following command in the project root directory:
 
@@ -67,8 +75,9 @@ To run the project, follow these steps:
 
 1. Start Zookeeper (if running Kafka locally).
 2. Start Kafka.
+3. Start Mosquitto (for MQTT).
 3. Start the sensor-collector microservice.
-4. Send sensor data to the microservice.
+4. Send sensor data to the microservice via HTTP POST or MQTT.
 
 ## API
 
@@ -107,8 +116,8 @@ To run the project, follow these steps:
 
 ## Scripts
 
-With the following script, you can send sensor data to the `sensor-collector` microservice. Make sure the microservice is
-running before executing the script, and ensure that the requests library is installed.
+With the following script, you can send sensor data to the `sensor-collector` microservice via HTTP POST. Make sure 
+the microservice is running before executing the script, and ensure that the requests library is installed.
 
 ```python
 import requests
@@ -145,6 +154,71 @@ def main():
             print(f"Status code: {response.status_code}")
         except :
             print("Error sendig sensor data")
+
+        time.sleep(3)
+
+if __name__ == "__main__":
+    main()
+```
+
+With the following script, you can send sensor data to the `sensor-collector` microservice via MQTT. Make sure
+the microservice is running before executing the script, and ensure that the requests library is installed.
+
+```python
+import json
+import paho.mqtt.client as mqtt
+import random
+import time
+from datetime import datetime
+
+def generate_sensor_data():
+    sensor_id = f"sensor-{random.randint(1000,5000)}"
+    sensor_type = random.choice(["temperature", "humidity", "preassure"])
+    sensor_value = round(random.uniform(1, 100), 2)
+    sensor_unit = random.choice(["°C", "%", "hPa"])
+    sensor_timestamp = datetime.now().isoformat()
+
+    return {
+            "sensorId": sensor_id,
+            "sensorType": sensor_type,
+            "sensorValue": sensor_value,
+            "sensorUnit": sensor_unit,
+            "sensorTimestamp": sensor_timestamp
+     }
+
+def on_connect(client, userdata, flags, rc):
+    if rc == 0:
+        print("Connected to MQTT Broker!")
+    else:
+        print(f"Failed to connect, return code {rc}")
+
+def main():
+    broker = "127.0.0.1"
+    port = 1883
+    username = "admin"
+    password = "admin"
+    
+
+    client = mqtt.Client()
+    client.username_pw_set(username, password)
+    client.on_connect = on_connect
+
+    try:
+        client.connect(broker, port)
+    except:
+        print("Error connecting to MQTT Broker")
+        return
+
+    while True:
+        topic = f"sensor/{random.randint(0,20)}"
+        sensor_data = generate_sensor_data()
+        sensor_json = json.dumps(sensor_data)
+
+        try:
+            client.publish(topic, sensor_json)
+            print(f"Message sent: {sensor_data}")
+        except:
+            print("Error sending sensor data")
 
         time.sleep(3)
 
