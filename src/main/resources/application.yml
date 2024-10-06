@@ -7,6 +7,12 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
       client-id: sensor-producer
+  mqtt:
+    host: 127.0.0.1
+    port: 1883
+    username: admin
+    password: admin
+    generalTopic: sensor/#
 
 server:
   port: 8080
